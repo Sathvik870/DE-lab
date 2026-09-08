@@ -16,12 +16,17 @@ Class Comments:
 
 import os
 from unittest.mock import patch
+import pytest
 
 from etl.config import (
     DatabaseConfig,
     KafkaConfig,
     AirflowConfig,
     PipelineSettings,
+    db_config,
+    kafka_config,
+    airflow_config,
+    pipeline_settings,
 )
 
 
@@ -71,3 +76,4 @@ class TestConfigUnit:
         p_cfg = PipelineSettings()
         assert p_cfg.batch_size > 0
         assert p_cfg.log_level in {"INFO", "DEBUG", "WARN", "ERROR"}
+
