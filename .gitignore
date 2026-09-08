@@ -1,0 +1,55 @@
+# ==============================================================================
+# Git Version Control: .gitignore for Data Engineering
+# ==============================================================================
+
+# Environment & Virtualenvs
+venv/
+venv
+.venv/
+.venv
+env/
+.env
+.env.*
+!.env.example
+
+# Secrets & Credentials
+airflow/secrets/
+*.pem
+*.key
+*.id_rsa
+*.crt
+credentials.json
+
+# Data Engineering Runtime Artifacts & Logs
+airflow/logs/
+*.log
+etl_tmp/
+*.pkl
+*.parquet
+*.avro
+*.sqlite
+*.sqlite3
+*.db
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Frontend / Dashboard
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
+dashboard/*.local
+
+# OS & Editor Artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~

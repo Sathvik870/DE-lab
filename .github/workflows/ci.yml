@@ -1,0 +1,127 @@
+name: Data Engineering CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - develop
+    paths:
+      - 'etl/**'
+      - 'airflow/dags/**'
+      - 'tests/**'
+      - 'requirements*.txt'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+    paths:
+      - 'etl/**'
+      - 'airflow/dags/**'
+      - 'tests/**'
+      - 'requirements*.txt'
+
+jobs:
+  lint:
+    name: Code Quality & Linting (Flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Execute Static Code Analysis
+        run: |
+          # Stop build if there are Python syntax errors or undefined names
+          flake8 etl/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warning level checks with 120 char line length
+          flake8 etl/ tests/ --count --max-line-length=120 --statistics
+
+  unit-tests:
+    name: Unit Tests (Transformations & Validations)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Transformation & Validator Unit Tests
+        run: |
+          pytest tests/test_transform.py tests/test_validator.py -v
+
+  mock-and-integration-tests:
+    name: Mock & Integration Tests (Extract, Load, DAG)
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Database Mocks & Airflow DAG Integrity Tests
+        run: |
+          pytest tests/test_extract_mock.py tests/test_loader_mock.py tests/test_pipeline_mock.py tests/test_dag_integrity.py -v
+
+  coverage-report:
+    name: Test Coverage & Quality Gate
+    runs-on: ubuntu-latest
+    needs: [unit-tests, mock-and-integration-tests]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python Runtime
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Generate Code Coverage Report
+        run: |
+          pytest tests/ -v --cov=etl --cov-report=term-missing --cov-report=xml --cov-fail-under=80
+
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+

@@ -1,0 +1,7 @@
+FROM apache/airflow:3.0.4
+
+RUN pip install --no-cache-dir \
+    kafka-python \
+    pandas \
+    psycopg2-binary \
+    python-dotenv

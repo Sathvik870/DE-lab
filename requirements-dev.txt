@@ -1,0 +1,15 @@
+# ==============================================================================
+# Pipeline as Code: Development & Testing Dependencies
+# Earbuds Data Engineering ETL Pipeline
+# ==============================================================================
+
+-r requirements.txt
+
+# Testing Framework & Plugins
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Code Quality & Static Analysis
+flake8>=7.0.0
+

@@ -1,0 +1,47 @@
+  services:
+    airflow:
+      build:
+        context: .
+        dockerfile: Dockerfile.airflow
+
+      container_name: earbuds-airflow
+
+      ports:
+        - "8080:8080"
+
+      environment:
+        # AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+        AIRFLOW__CORE__EXECUTOR: LocalExecutor
+        AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+        AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+        AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+        KAFKA_SERVER: earbuds-kafka:29092
+        DB_HOST: host.docker.internal
+        DB_PORT: 5432
+        DB_NAME: earbuds_db
+        DB_USER: postgres
+        DB_PASSWORD: sathvik2004
+        DB_PASSWORD: ${DB_PASSWORD:-sathvik2004}
+        AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+        AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: "/opt/airflow/secrets/simple_auth_manager_passwords.json"
+
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+
+      volumes:
+        - ./airflow/dags:/opt/airflow/dags
+        - ./airflow/logs:/opt/airflow/logs
+        - ./airflow/plugins:/opt/airflow/plugins
+        - ./airflow/config:/opt/airflow/config
+        - ./scripts:/opt/airflow/scripts
+        - /run/media/sathvik/HDD - 1/Sem 9/DATA ENGINEERING/Project/etl:/opt/airflow/etl
+        - ./etl:/opt/airflow/etl
+        - ./airflow/secrets:/opt/airflow/secrets
+      networks:
+        - etl-network
+
+      command: standalone
+
+  networks:
+    etl-network:
+      external: true
