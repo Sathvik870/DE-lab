@@ -12,4 +12,4 @@ pytest-mock>=3.12.0
 
 # Code Quality & Static Analysis
 flake8>=7.0.0
-
+ 
