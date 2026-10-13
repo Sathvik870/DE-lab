@@ -18,9 +18,12 @@ Class Comments:
 ==============================================================================
 """
 
-import os
 from typing import List, Dict, Any, Optional
-from pyspark.sql import SparkSession
+
+try:
+    from pyspark.sql import SparkSession
+except ImportError:
+    SparkSession = Any  # type: ignore
 
 
 CURATED_PRODUCTS_DDL = """
@@ -89,12 +92,19 @@ def initialize_lakehouse_tables(spark: SparkSession) -> None:
     print("[ICEBERG INIT] Lakehouse tables initialized successfully.")
 
 
-def get_table_snapshots(spark: SparkSession, table_name: str = "lakehouse.earbuds.curated_products") -> List[Dict[str, Any]]:
+def get_table_snapshots(
+    spark: SparkSession,
+    table_name: str = "lakehouse.earbuds.curated_products"
+) -> List[Dict[str, Any]]:
     """
     Query historical Iceberg snapshot metadata to support Time-Travel inspections.
     """
     try:
-        snapshots_df = spark.sql(f"SELECT committed_at, snapshot_id, parent_id, operation, summary FROM {table_name}.snapshots ORDER BY committed_at DESC")
+        query = (
+            f"SELECT committed_at, snapshot_id, parent_id, operation, summary "
+            f"FROM {table_name}.snapshots ORDER BY committed_at DESC"
+        )
+        snapshots_df = spark.sql(query)
         return [row.asDict() for row in snapshots_df.collect()]
     except Exception as e:
         print(f"[ICEBERG SNAPSHOTS] Warning: could not retrieve snapshots for {table_name}: {e}")
@@ -119,4 +129,3 @@ def query_time_travel(
 
     print(f"[ICEBERG TIME-TRAVEL] Executing: {query}")
     return spark.sql(query)
-

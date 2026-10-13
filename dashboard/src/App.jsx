@@ -470,7 +470,7 @@ function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              Phase II: Real-Time Lakehouse (Trino)
+              Real-Time Lakehouse (Trino)
             </button>
             <button
               onClick={() => setActiveTab("batch")}
@@ -480,7 +480,7 @@ function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              Phase I: Batch Pipeline (PostgreSQL)
+              Batch Pipeline (PostgreSQL)
             </button>
           </div>
         </header>

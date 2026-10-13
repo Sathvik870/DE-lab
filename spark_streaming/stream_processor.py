@@ -31,26 +31,65 @@ from typing import Dict, Any, Tuple, List, Optional
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from pyspark.sql import SparkSession, DataFrame  # noqa: E402
-from pyspark.sql.functions import (  # noqa: E402
-    from_json,
-    col,
-    to_timestamp,
-    to_date,
-    trim,
-    when,
-    current_timestamp,
-    coalesce,
-    lit,
-    length,
-)
-from pyspark.sql.types import (  # noqa: E402
-    StructType,
-    StructField,
-    StringType,
-    DoubleType,
-    LongType,
-)
+try:
+    from pyspark.sql import SparkSession, DataFrame  # noqa: E402
+    from pyspark.sql.functions import (  # noqa: E402
+        from_json,
+        col,
+        to_timestamp,
+        to_date,
+        trim,
+        when,
+        current_timestamp,
+        coalesce,
+        lit,
+        length,
+    )
+    from pyspark.sql.types import (  # noqa: E402
+        StructType,
+        StructField,
+        StringType,
+        DoubleType,
+        LongType,
+    )
+    HAS_PYSPARK = True
+except ImportError:
+    HAS_PYSPARK = False
+    SparkSession = None  # type: ignore
+    DataFrame = Any  # type: ignore
+
+    class _DataType:
+        def __init__(self, type_str: str):
+            self._type_str = type_str
+
+        def simpleString(self) -> str:
+            return self._type_str
+
+    class StringType(_DataType):  # type: ignore
+        def __init__(self):
+            super().__init__("string")
+
+    class DoubleType(_DataType):  # type: ignore
+        def __init__(self):
+            super().__init__("double")
+
+    class LongType(_DataType):  # type: ignore
+        def __init__(self):
+            super().__init__("bigint")
+
+    class StructField:  # type: ignore
+        def __init__(self, name: str, dataType: _DataType, nullable: bool = True):
+            self.name = name
+            self.dataType = dataType
+            self.nullable = nullable
+
+    class StructType:  # type: ignore
+        def __init__(self, fields: List[StructField]):
+            self.fields = fields
+
+        def fieldNames(self) -> List[str]:
+            return [f.name for f in self.fields]
+
 
 from etl.config import kafka_config  # noqa: E402
 from analytics.trino_client import trino_client  # noqa: E402
@@ -80,6 +119,9 @@ def get_spark_session(app_name: str = "EarbudsLakehouseStreaming") -> SparkSessi
     """
     Construct or retrieve SparkSession configured with S3A support and local bindings.
     """
+    if not HAS_PYSPARK or SparkSession is None:
+        raise RuntimeError("PySpark is not installed in the current environment.")
+
     builder = (
         SparkSession.builder.appName(app_name)
         .master("local[*]")
@@ -115,6 +157,8 @@ def validate_and_transform_stream(raw_df: DataFrame) -> Tuple[DataFrame, DataFra
     Returns:
         Tuple[DataFrame, DataFrame]: (valid_df, dlq_df)
     """
+    if not HAS_PYSPARK:
+        raise RuntimeError("PySpark is not installed in the current environment.")
     # --------------------------------------------------------------------------
     # 1. Clean & Normalize Base Attributes
     # --------------------------------------------------------------------------
