@@ -19,6 +19,8 @@ import requests
 
 from dotenv import load_dotenv
 
+from analytics.trino_client import trino_client
+
 
 load_dotenv()
 
@@ -1009,3 +1011,69 @@ async def upload_csv(
             status_code=500,
             detail=str(error),
         )
+
+
+# ==============================================================================
+# PHASE II: REAL-TIME LAKEHOUSE & TRINO SERVING ENDPOINTS
+# ==============================================================================
+
+@app.get("/trino/status")
+def trino_status():
+    """Trino cluster and Iceberg catalog connectivity status."""
+    return trino_client.get_health_status()
+
+
+@app.get("/trino/kpis")
+def trino_kpis():
+    """Real-time Lakehouse product KPIs queried from curated_products."""
+    return trino_client.get_realtime_kpis()
+
+
+@app.get("/trino/category-aggregates")
+def trino_category_aggregates():
+    """Category aggregations demonstrating partition-pruned performance."""
+    return trino_client.get_category_aggregates()
+
+
+@app.get("/trino/snapshots")
+def trino_snapshots():
+    """Iceberg table commit timeline and snapshot history (for Time-Travel)."""
+    return trino_client.get_table_snapshots()
+
+
+@app.get("/trino/quarantine")
+def trino_quarantine():
+    """Dead-Letter Queue (DLQ) quarantine breakdown."""
+    return trino_client.get_quarantine_stats()
+
+
+@app.get("/trino/latency-benchmark")
+def trino_latency_benchmark():
+    """Pre- vs post-compaction query latency benchmark metrics."""
+    return trino_client.get_latency_benchmark()
+
+
+@app.get("/lineage")
+def data_lineage():
+    """End-to-end data lineage metadata mapping origin to destination."""
+    return {
+        "nodes": [
+            {"id": "kafka_stream", "label": "Apache Kafka (earbuds_stream)", "type": "source", "layer": "Ingestion"},
+            {"id": "spark_streaming", "label": "PySpark Structured Streaming", "type": "processor", "layer": "Processing"},
+            {"id": "iceberg_raw", "label": "Iceberg raw_events (Bronze)", "type": "storage", "layer": "Lakehouse Storage"},
+            {"id": "iceberg_curated", "label": "Iceberg curated_products (Silver/Gold)", "type": "storage", "layer": "Lakehouse Storage"},
+            {"id": "iceberg_dlq", "label": "Iceberg quarantine (DLQ)", "type": "quarantine", "layer": "Dead-Letter Queue"},
+            {"id": "trino_engine", "label": "Trino Distributed SQL Engine", "type": "serving", "layer": "Serving"},
+            {"id": "analytics_api", "label": "FastAPI Serving API", "type": "service", "layer": "API Gateway"},
+            {"id": "react_dashboard", "label": "React Lakehouse Dashboard", "type": "consumer", "layer": "Consumption / BI"},
+        ],
+        "edges": [
+            {"from": "kafka_stream", "to": "spark_streaming", "desc": "Real-time JSON events"},
+            {"from": "spark_streaming", "to": "iceberg_raw", "desc": "Bronze append"},
+            {"from": "spark_streaming", "to": "iceberg_curated", "desc": "Validated & partitioned by category"},
+            {"from": "spark_streaming", "to": "iceberg_dlq", "desc": "Anomalies / schema violations"},
+            {"from": "iceberg_curated", "to": "trino_engine", "desc": "Partition-pruned SQL queries"},
+            {"from": "trino_engine", "to": "analytics_api", "desc": "Aggregated metrics & time-travel"},
+            {"from": "analytics_api", "to": "react_dashboard", "desc": "Interactive real-time visualization"},
+        ],
+    }

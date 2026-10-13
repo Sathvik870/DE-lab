@@ -1,6 +1,6 @@
 # ==============================================================================
 # Pipeline as Code: Production Dependencies
-# Earbuds Data Engineering ETL Pipeline
+# Earbuds Data Engineering ETL & Lakehouse Platform
 # ==============================================================================
 
 # Core Data Processing & Database Drivers
@@ -9,8 +9,11 @@ psycopg2-binary>=2.9.9
 python-dotenv>=1.0.0
 kafka-python>=2.0.2
 
+# Lakehouse & Distributed Query Engine
+trino>=0.328.0
+faker>=24.0.0
+
 # Analytics Service & Ingestion API
 fastapi>=0.110.0
 uvicorn>=0.28.0
 requests>=2.31.0
-

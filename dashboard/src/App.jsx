@@ -15,8 +15,9 @@ import {
   Cell,
   Legend,
 } from "recharts";
+import LakehouseView from "./LakehouseView";
 
-const API_URL = "http://127.0.0.1:8001";
+const API_URL = "http://127.0.0.1:8000";
 
 function MetricCard({
   title,
@@ -93,6 +94,7 @@ function PipelineStatus({ status }) {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState("lakehouse");
   const [eda, setEda] = useState(null);
 
   const [businessAnalytics, setBusinessAnalytics] =
@@ -279,7 +281,26 @@ function App() {
     businessAnalytics?.products || [];
 
   useEffect(() => {
-    fetchBusinessAnalytics();
+    let ignore = false;
+    const loadAnalytics = async () => {
+      try {
+        const response = await fetch(`${API_URL}/business-analytics`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch business analytics");
+        }
+        const data = await response.json();
+        if (!ignore) {
+          setBusinessAnalytics(data);
+        }
+      } catch (error) {
+        console.error("[BUSINESS] Error:", error);
+      }
+    };
+
+    loadAnalytics();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const priceDistribution = [
@@ -422,70 +443,52 @@ function App() {
     },
   ];
 
-  const discountSegments = [
-    {
-      segment: "0-10%",
-      min: 0,
-      max: 10,
-    },
-    {
-      segment: "10-20%",
-      min: 10,
-      max: 20,
-    },
-    {
-      segment: "20-30%",
-      min: 20,
-      max: 30,
-    },
-    {
-      segment: "30-40%",
-      min: 30,
-      max: 40,
-    },
-    {
-      segment: "40-50%",
-      min: 40,
-      max: 50,
-    },
-    {
-      segment: "50-60%",
-      min: 50,
-      max: 60,
-    },
-    {
-      segment: "60%+",
-      min: 60,
-      max: Infinity,
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-slate-950 p-6 text-white">
 
       <div className="mx-auto max-w-[1800px]">
 
-        <header className="mb-6 flex items-start justify-between border-b border-slate-800 pb-5">
-
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <h1 className="text-2xl font-bold">
-              Earbuds Analytics
+              Earbuds Data Platform
             </h1>
-
             <p className="mt-1 text-sm text-slate-400">
-              EDA and business analytics
+              Enterprise Real-Time Lakehouse & Batch Analytics
             </p>
-
-            <PipelineStatus
-              status={
-                pipelineStatus
-              }
-            />
+            {activeTab === "batch" && (
+              <PipelineStatus status={pipelineStatus} />
+            )}
           </div>
 
+          <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-1.5">
+            <button
+              onClick={() => setActiveTab("lakehouse")}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-xs font-semibold transition ${
+                activeTab === "lakehouse"
+                  ? "bg-sky-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Phase II: Real-Time Lakehouse (Trino)
+            </button>
+            <button
+              onClick={() => setActiveTab("batch")}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-xs font-semibold transition ${
+                activeTab === "batch"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+              }`}
+            >
+              Phase I: Batch Pipeline (PostgreSQL)
+            </button>
+          </div>
         </header>
 
-        <main className="space-y-8">
+        {activeTab === "lakehouse" ? (
+          <LakehouseView />
+        ) : (
+          <main className="space-y-8">
 
           <section className="grid grid-cols-7 gap-4">
 
@@ -971,6 +974,7 @@ function App() {
         </section>
 
         </main>
+        )}
       </div>
     </div>
   );
